@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>JSON-Canvas prototype</title>
+    <style type="text/css">
+      #page {
+      }
+
+      .book {
+        width: 800px;
+        margin: 0 auto;
+      }
+    </style>
+    <link href='http://fonts.googleapis.com/css?family=Arapey|Denk+One|Finger+Paint' rel='stylesheet' type='text/css'>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script type="text/javascript" src="jquery-json_canvas_editor.js"></script>
+    <script type="text/javascript" src="runner.js"></script>
+  </head>
+  <body>
+    <div class="editorWrapper">
+      <canvas id="jcEditor" width="800" height="600"></canvas>
+      <nav>
+        <ul id="jcTools">
+          <li class="text">Text</li>
+          <li class="hand">hand</li>
+        </ul>
+      </nav>
+      <div id="jcText">
+        <input type="text" id="text-value"/>
+        <input type="text" id="text-style"/>
+        <button id="validate">Save</button>
+      </div>
+      <div id="jcEdit">
+        <button id="remove">Remove</button>
+      </div>
+    </div>
+  </body>
+</html>
