@@ -110,6 +110,28 @@
     textEditingView.setModel(this);
   };
 
+  var ImageNode = function(x, y, url) {
+    Node.call(this, x, y);
+    this.img = new Image();
+    this.img.src = url;
+    this.width = this.img.width;
+    this.height = this.img.height;
+    var that = this;
+    this.img.onload = function() {
+      that.draw(canvas.getContext('2d'));
+    };
+  };
+
+  ImageNode.prototype = Object.create(Node.prototype);
+
+  ImageNode.prototype.draw = function(context) {
+      context.drawImage(this.img, this.x, this.y);
+  };
+
+  ImageNode.prototype.collideAction = function() {
+    // textEditingView.setModel(this);
+  };
+
   function refreshCanvas() {
     canvas.width = canvas.width;
     setCanvasStyle(canvas);
@@ -119,6 +141,26 @@
   function canvasToEditor() {
     var context = canvas.getContext('2d');
     setCanvasStyle(canvas);
+
+    canvas.addEventListener('dragover', function(evt) {
+      evt.preventDefault();
+    });
+    canvas.addEventListener('drop', function(evt) {
+      var posX = evt.offsetX;
+      var posY = evt.offsetY;
+
+      if (evt.dataTransfer.files.length > 0) {
+        var file = evt.dataTransfer.files[0];
+        if (file.type.indexOf('image') != -1) {
+          var reader = new FileReader();
+          reader.onload = function(evt) {
+            nodes.push(new ImageNode(posX, posY, evt.target.result));
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+      evt.preventDefault();
+    }, false);
 
     $(canvas)
     .on('mousedown', function(evt) {
