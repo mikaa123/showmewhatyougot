@@ -16,29 +16,31 @@
 
   var selectedTool,
     canvas,
+    $this,
+    stage,
     nodes = [];
 
   var textEditingView = {
     initialize: function($elt) {
       var that = this;
       this.$elt = $elt;
-      this.$text = $elt.find('#text-value');
-      this.$style = $elt.find('#text-style');
+      this.$font = $elt.find('#style-font');
+      this.$size = $elt.find('#style-size');
       this.$validate = $elt.find('#validate');
 
       this.$validate.on('click', function() {
         if (that.model) {
-          that.model.text  = that.$text.val();
-          that.model.style = that.$style.val();
-          refreshCanvas();
+          that.model.setFontFamily(that.$font.val());
+          that.model.setFontSize(that.$size.val());
+          stage.draw();
         }
       });
     },
 
     setModel: function(textNode) {
       this.model = textNode;
-      this.$text.val(this.model.text);
-      this.$style.val(this.model.style);
+      this.$font.val(this.model.getFontFamily());
+      this.$size.val(this.model.getFontSize());
     }
   };
 
@@ -91,45 +93,88 @@
     }
   };
 
+  // var TextNode = function(x, y) {
+  //   Node.call(this, x, y);
+  //   this.text = "Placeholder";
+  //   this.style = CST.DEFAULT_FONT;
+  // };
+
+  // TextNode.prototype = Object.create(Node.prototype);
+
+  // TextNode.prototype.draw = function(context) {
+  //   context.save();
+  //   context.font = this.style;
+  //   context.fillText(this.text, this.x, this.y);
+  //   context.restore();
+  // };
+
+  // TextNode.prototype.collideAction = function() {
+  //   textEditingView.setModel(this);
+  // };
+
+  // var ImageNode = function(x, y, url) {
+  //   Node.call(this, x, y);
+  //   this.img = new Image();
+  //   this.img.src = url;
+  //   this.width = this.img.width;
+  //   this.height = this.img.height;
+  //   var that = this;
+  //   this.img.onload = function() {
+  //     that.draw(canvas.getContext('2d'));
+  //   };
+  // };
+
+  // ImageNode.prototype = Object.create(Node.prototype);
+
+  // ImageNode.prototype.draw = function(context) {
+  //     context.drawImage(this.img, this.x, this.y);
+  // };
+
+  // ImageNode.prototype.collideAction = function() {
+  //   // textEditingView.setModel(this);
+  // };
+
+  var ImageNode = function(img, x, y) {
+    Kinetic.Image.call(this, {
+      x: x,
+      y: y,
+      draggable: true,
+      image: img
+    });
+
+    this
+    .on('click', function(evt) {
+      // this.edit();
+    });
+  };
+
+  ImageNode.prototype = Object.create(Kinetic.Image.prototype);
+
   var TextNode = function(x, y) {
-    Node.call(this, x, y);
-    this.text = "Placeholder";
-    this.style = CST.DEFAULT_FONT;
+    Kinetic.Text.call(this, {
+      x: x,
+      y: y,
+      text: 'Placholder',
+      fontSize: 30,
+      fontFamily: 'Helvetica',
+      fill: 'black',
+      draggable: true
+    });
+
+    this
+    .on('dblclick', function(evt) {
+      this.setText(prompt('New Text:'));
+      stage.draw();
+    })
+    .on('click', function(evt) {
+      this.edit();
+    });
   };
 
-  TextNode.prototype = Object.create(Node.prototype);
+  TextNode.prototype = Object.create(Kinetic.Text.prototype);
 
-  TextNode.prototype.draw = function(context) {
-    context.save();
-    context.font = this.style;
-    context.fillText(this.text, this.x, this.y);
-    context.restore();
-  };
-
-  TextNode.prototype.collideAction = function() {
+  TextNode.prototype.edit = function() {
     textEditingView.setModel(this);
-  };
-
-  var ImageNode = function(x, y, url) {
-    Node.call(this, x, y);
-    this.img = new Image();
-    this.img.src = url;
-    this.width = this.img.width;
-    this.height = this.img.height;
-    var that = this;
-    this.img.onload = function() {
-      that.draw(canvas.getContext('2d'));
-    };
-  };
-
-  ImageNode.prototype = Object.create(Node.prototype);
-
-  ImageNode.prototype.draw = function(context) {
-      context.drawImage(this.img, this.x, this.y);
-  };
-
-  ImageNode.prototype.collideAction = function() {
-    // textEditingView.setModel(this);
   };
 
   function refreshCanvas() {
@@ -139,13 +184,32 @@
   }
 
   function canvasToEditor() {
-    var context = canvas.getContext('2d');
-    setCanvasStyle(canvas);
+    stage = new Kinetic.Stage({
+      container: $this.get(0),
+      width: 800,
+      height: 600
+    });
 
-    canvas.addEventListener('dragover', function(evt) {
+    var layer = new Kinetic.Layer();
+    stage.add(layer);
+
+    $(stage.getContainer())
+    .on('mousedown', function(evt) {
+      switch(selectedTool) {
+        case CST.TOOLS.TEXT:
+          var text = new TextNode(evt.offsetX, evt.offsetY);
+          nodes.push(text);
+          layer.add(text);
+          stage.draw();
+          selectedTool = CST.TOOLS.HAND;
+          break;
+      }
+    });
+
+    stage.getContainer().addEventListener('dragover', function(evt) {
       evt.preventDefault();
     });
-    canvas.addEventListener('drop', function(evt) {
+    stage.getContainer().addEventListener('drop', function(evt) {
       var posX = evt.offsetX;
       var posY = evt.offsetY;
 
@@ -153,8 +217,18 @@
         var file = evt.dataTransfer.files[0];
         if (file.type.indexOf('image') != -1) {
           var reader = new FileReader();
+
           reader.onload = function(evt) {
-            nodes.push(new ImageNode(posX, posY, evt.target.result));
+            var img = new Image();
+            img.src = evt.target.result;
+
+            img.onload = function() {
+              var imgNode = new ImageNode(img, posX, posY);
+              nodes.push(imgNode);
+              layer.add(imgNode);
+              stage.draw();
+              selectedTool = CST.TOOLS.HAND;
+            };
           };
           reader.readAsDataURL(file);
         }
@@ -162,32 +236,37 @@
       evt.preventDefault();
     }, false);
 
-    $(canvas)
-    .on('mousedown', function(evt) {
-      switch(selectedTool) {
-        case CST.TOOLS.TEXT:
-          nodes.push(new TextNode(evt.offsetX, evt.offsetY));
-          break;
-        case CST.TOOLS.HAND:
-          $.each(nodes, function() {
-            this.collide(evt.offsetX, evt.offsetY);
-          });
-          break;
-      }
+    // $(canvas)
+    // .on('mousedown', function(evt) {
+    //   var node;
 
-      refreshCanvas(canvas);
-    })
-    .on('mousemove', function(evt) {
-      $.each(nodes, function() {
-        if (this.dragged) {
-          this.moveTo(evt.offsetX, evt.offsetY);
-          refreshCanvas(canvas);
-        }
-      });
-    })
-    .on('mouseup', function(evt) {
-      $.each(nodes, function() { this.dragged = false; });
-    });
+    //   switch(selectedTool) {
+    //     case CST.TOOLS.TEXT:
+    //       node = new TextNode(evt.offsetX, evt.offsetY);
+    //       nodes.push(node);
+    //       textEditingView.setModel(node);
+    //       selectedTool = CST.TOOLS.HAND;
+    //       break;
+    //     case CST.TOOLS.HAND:
+    //       $.each(nodes, function() {
+    //         this.collide(evt.offsetX, evt.offsetY);
+    //       });
+    //       break;
+    //   }
+
+    //   refreshCanvas(canvas);
+    // })
+    // .on('mousemove', function(evt) {
+    //   $.each(nodes, function() {
+    //     if (this.dragged) {
+    //       this.moveTo(evt.offsetX, evt.offsetY);
+    //       refreshCanvas(canvas);
+    //     }
+    //   });
+    // })
+    // .on('mouseup', function(evt) {
+    //   $.each(nodes, function() { this.dragged = false; });
+    // });
   }
 
   function setupTools($tools) {
@@ -222,10 +301,8 @@
     textEditingView.initialize(settings.text);
     editView.initialize(settings.edit);
 
-    return this.filter('canvas').each(function() {
-      canvas = this;
-      canvasToEditor();
-    });
+    $this = this;
+    canvasToEditor();
   };
 
 })(jQuery);
