@@ -3,38 +3,134 @@
   <head>
     <meta charset="utf-8">
     <title>JSON-Canvas prototype</title>
+    <link href='http://yui.yahooapis.com/pure/0.1.0/pure-min.css' rel='stylesheet' type='text/css'>
     <style type="text/css">
-      #page {
+      #menu  {
+        margin-left: -150px;
+        width: 150px;
+        position: fixed;
+        top: 0;
+        left: 150px;
+        bottom: 0;
+        z-index: 1000;
+        background: #191818;
+        overflow-y: auto;
       }
 
-      .book {
-        width: 800px;
-        margin: 0 auto;
+      #menu .pure-menu-open {
+        background: transparent;
+        border: 0;
       }
+
+      #menu .pure-menu-heading {
+        font-size: 110%;
+        color: #fff;
+      }
+
+      #menu .pure-menu ul, #menu .pure-menu .menu-item-divided {
+        border-top: 1px solid #333;
+      }
+
+      #menu .pure-menu-selected {
+        background: #1f8dd6;
+      }
+
+      #menu a {
+        color: #999;
+        border: none;
+        white-space: normal;
+        padding: 0.6em 0 0.6em 0.6em;
+      }
+
+      #menu .pure-menu-selected a {
+        color: white;
+      }
+
+      #main {
+        width: 100%;
+      }
+
+      #layout {
+        padding-left: 150px;
+        left: 0;
+      }
+
+      #menu .pure-menu li a:hover {
+        background: #333;
+      }
+
+      .notice {
+        background-color: #61B842;
+        color: white;
+      }
+
+      .header {
+        min-height: 80px;
+        margin: 0;
+        color: #333;
+        padding: 1em;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+        background: #fff;
+      }
+
+      .header h1, .hero h1, .hero h2 {
+        font-family: "Helvetica", sans-serif;
+        font-weight: 100;
+      }
+
+      .header h2 {
+        font-family: "Josefin Sans", sans-serif;
+        font-weight: 100;
+        margin: 0;
+        color: #ccc;
+      }
+
+      .editorWrapper {
+        margin-left: 30px;
+      }
+
+      #jcEdit {
+        display: inline-block;
+      }
+
     </style>
-    <link href='http://fonts.googleapis.com/css?family=Arapey|Denk+One|Finger+Paint' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Arapey|Denk+One|Finger+Paint|News+Cycle|Josefin+Sans:100' rel='stylesheet' type='text/css'>
     <script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
     <script type="text/javascript" src="kinetic-v4.5.2.min.js"></script>
     <script type="text/javascript" src="jquery-json_canvas_editor.js"></script>
     <script type="text/javascript" src="runner.js"></script>
   </head>
   <body>
-    <div class="editorWrapper">
-      <div id="jcEditor"></div>
-      <nav>
-        <ul id="jcTools">
-          <li class="text">Text</li>
-          <li class="hand">hand</li>
-        </ul>
-      </nav>
-      <div id="jcText">
-        <input type="text" id="style-font"/>
-        <input type="text" id="style-size"/>
-        <input type="text" id="style-color"/>
-        <button id="validate">Save</button>
+    <div class="pure-g-r" id="layout">
+      <div class="pure-u" id="menu">
+        <div class="pure-menu pure-menu-open">
+          <a class="pure-menu-heading">Tools</a>
+          <ul id="jcTools">
+            <li class="text pure-menu-selected"><a href="#">Text</a></li>
+            <li class="hand"><a href="#">hand</a></li>
+          </ul>
+        </div>
       </div>
-      <div id="jcEdit">
-        <button id="remove">Remove</button>
+      <div class="pure-u" id="main">
+        <div class="editorWrapper">
+          <div id="jcText">
+            <form class="pure-form">
+              <fieldset>
+
+                <input type="text" id="style-font"/>
+                <input type="text" id="style-size"/>
+                <input type="text" id="style-color"/>
+
+                <button id="validate" class="pure-button notice" onClick="return false;">Save</button>
+                <div id="jcEdit">
+                  <button id="remove" class="pure-button" onClick="return false;">Remove</button>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+          <div id="jcEditor"></div>
+        </div>
       </div>
     </div>
   </body>
