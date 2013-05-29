@@ -18,6 +18,7 @@
     $this,
     stage,
     layer,
+    currentSelectedNode,
     nodes = [];
 
   var textEditingView = {
@@ -39,8 +40,13 @@
 
     setModel: function(textNode) {
       this.model = textNode;
-      this.$font.val(this.model && this.model.getFontFamily() || '');
-      this.$size.val(this.model && this.model.getFontSize() || '');
+      if (textNode instanceof TextNode) {
+        this.$font.val(this.model && this.model.getFontFamily() || '');
+        this.$size.val(this.model && this.model.getFontSize() || '');
+      } else {
+        this.$font.val('');
+        this.$size.val('');
+      }
     }
   };
 
@@ -48,11 +54,17 @@
     initialize: function($elt) {
       var that = this;
       this.$remove = $elt.find('#remove');
+      this.$unselect = $elt.find('#unselect');
       this.$remove.on('click', function() {
         if (that.model) {
           that.model.remove();
           freeEditionViews();
           stage.draw();
+        }
+      });
+      this.$unselect.on('click', function() {
+        if (that.model) {
+          freeEditionViews();
         }
       });
     },
@@ -63,6 +75,10 @@
   };
 
   function freeEditionViews() {
+    if (currentSelectedNode && currentSelectedNode.unselect) {
+      currentSelectedNode.unselect();
+    }
+    currentSelectedNode = undefined;
     editView.setModel(undefined);
     textEditingView.setModel(undefined);
   }
@@ -83,13 +99,123 @@
       image: img
     }));
 
+    var that = this;
+    function createAnchor(x, y, name) {
+      var anchor = new Kinetic.Circle({
+        x: x,
+        y: y,
+        stroke: '#666',
+        fill: '#ddd',
+        strokeWidth: 2,
+        radius: 8,
+        name: name,
+        draggable: true,
+        dragOnTop: false
+      });
+
+      anchor.on('dragmove', function() {
+        that.update(this);
+        layer.draw();
+      })
+      .on('mousedown touchstart', function() {
+        that.setDraggable(false);
+        this.moveToTop();
+      })
+      .on('mouseup', function() {
+        console.log('up!');
+        that.setDraggable(true);
+        this.moveToTop();
+      })
+      .on('mouseover', function() {
+        document.body.style.cursor = 'pointer';
+        this.setStrokeWidth(4);
+        layer.draw();
+      })
+      .on('mouseout', function() {
+        document.body.style.cursor = 'default';
+        this.setStrokeWidth(2);
+        layer.draw();
+      });
+
+      that.add(anchor);
+    }
+
+    createAnchor(0, 0, 'topLeft');
+    createAnchor(img.width, 0, 'topRight');
+    createAnchor(img.width, img.height, 'bottomRight');
+    createAnchor(0, img.height, 'bottomLeft');
+    this.setAnchors(false);
+
     this
     .on('click', function(evt) {
-      // this.edit();
+      this.edit();
     });
   };
 
   ImageNode.prototype = Object.create(Kinetic.Group.prototype);
+  ImageNode.prototype.update = function(activeAnchor) {
+    var group = this;
+
+    var topLeft = group.get('.topLeft')[0];
+    var topRight = group.get('.topRight')[0];
+    var bottomRight = group.get('.bottomRight')[0];
+    var bottomLeft = group.get('.bottomLeft')[0];
+    var image = group.get('.image')[0];
+
+    var anchorX = activeAnchor.getX();
+    var anchorY = activeAnchor.getY();
+
+    // update anchor positions
+    switch (activeAnchor.getName()) {
+      case 'topLeft':
+        topRight.setY(anchorY);
+        bottomLeft.setX(anchorX);
+        break;
+      case 'topRight':
+        topLeft.setY(anchorY);
+        bottomRight.setX(anchorX);
+        break;
+      case 'bottomRight':
+        bottomLeft.setY(anchorY);
+        topRight.setX(anchorX);
+        break;
+      case 'bottomLeft':
+        bottomRight.setY(anchorY);
+        topLeft.setX(anchorX);
+        break;
+    }
+
+    image.setPosition(topLeft.getPosition());
+
+    var width = topRight.getX() - topLeft.getX();
+    var height = bottomLeft.getY() - topLeft.getY();
+    if(width && height) {
+      image.setSize(width, height);
+    }
+  };
+  ImageNode.prototype.setAnchors = function(visible) {
+    if (visible) {
+      this.get('.topLeft')[0].show();
+      this.get('.topRight')[0].show();
+      this.get('.bottomRight')[0].show();
+      this.get('.bottomLeft')[0].show();
+    } else {
+      this.get('.topLeft')[0].hide();
+      this.get('.topRight')[0].hide();
+      this.get('.bottomRight')[0].hide();
+      this.get('.bottomLeft')[0].hide();
+    }
+    layer.draw();
+  };
+  ImageNode.prototype.unselect = function() {
+    this.setAnchors(false);
+  };
+  ImageNode.prototype.edit = function() {
+    freeEditionViews();
+    this.setAnchors(true);
+    currentSelectedNode = this;
+    editView.setModel(this);
+  };
 
   var TextNode = function(x, y) {
     Kinetic.Text.call(this, {
@@ -108,20 +234,21 @@
       stage.draw();
     })
     .on('click', function(evt) {
-      this.moveToTop();
       this.edit();
     })
     .on('mouseover', function(evt) {
       document.body.style.cursor = 'pointer';
     })
     .on('mouseout', function() {
-        document.body.style.cursor = 'default';
+      document.body.style.cursor = 'default';
     });
   };
 
   TextNode.prototype = Object.create(Kinetic.Text.prototype);
-
   TextNode.prototype.edit = function() {
+    freeEditionViews();
+    this.moveToTop();
+    currentSelectedNode = this;
     editView.setModel(this);
     textEditingView.setModel(this);
   };
@@ -129,8 +256,8 @@
   function canvasToEditor() {
     stage = new Kinetic.Stage({
       container: $this.get(0),
-      width: 800,
-      height: 600
+      width: 1200,
+      height: 800
     });
 
     layer = new Kinetic.Layer();
@@ -146,9 +273,6 @@
           stage.draw();
           toolSelection.selectHand();
           text.edit();
-          break;
-        case CST.TOOLS.HAND:
-          freeEditionViews();
           break;
       }
     });
@@ -174,7 +298,8 @@
               nodes.push(imgNode);
               layer.add(imgNode);
               stage.draw();
-              selectedTool = CST.TOOLS.HAND;
+              imgNode.edit();
+              toolSelection.selectHand();
             };
           };
           reader.readAsDataURL(file);
