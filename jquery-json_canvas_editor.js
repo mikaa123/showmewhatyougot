@@ -6,7 +6,8 @@
   var CST = {
     TOOLS: {
       TEXT: 1,
-      HAND: 2
+      HAND: 2,
+      PATH: 3
     },
     DEFAULT_FONT: '30px Helvetica'
   };
@@ -263,6 +264,8 @@
     layer = new Kinetic.Layer();
     stage.add(layer);
 
+    var newSpline,
+      splineDrawing = false;
     $(stage.getContainer())
     .on('mousedown', function(evt) {
       switch(selectedTool) {
@@ -274,7 +277,34 @@
           toolSelection.selectHand();
           text.edit();
           break;
+        case CST.TOOLS.PATH:
+          newSpline = new Kinetic.Spline({
+            points: [{
+              x: evt.offsetX,
+              y: evt.offsetY
+            }],
+            stroke: 'black',
+            strokeWidth: 10,
+            lineCap: 'round',
+            tension: 1,
+            draggable: true
+          });
+          splineDrawing = true;
+          layer.add(newSpline);
+          layer.draw();
+          break;
       }
+    })
+    .on('mousemove', function(evt) {
+      if (splineDrawing && selectedTool === CST.TOOLS.PATH) {
+        newSpline.attrs.points.push({x: evt.offsetX, y: evt.offsetY});
+        newSpline.setPoints(newSpline.attrs.points);
+        layer.draw();
+      }
+    })
+    .on('mouseup', function(evt) {
+      splineDrawing = false;
+      toolSelection.selectHand();
     });
 
     stage.getContainer().addEventListener('dragover', function(evt) {
@@ -326,12 +356,22 @@
       $tools.find('.hand').addClass('pure-menu-selected');
     };
 
+    toolSelection.selectPath = function() {
+      $tools.find('li').removeClass('pure-menu-selected');
+      selectedTool = CST.TOOLS.PATH;
+      $tools.find('.path').addClass('pure-menu-selected');
+    };
+
     settings.tools.find('.text').on('click', function() {
       toolSelection.selectText();
     });
 
     settings.tools.find('.hand').on('click', function() {
       toolSelection.selectHand();
+    });
+
+    settings.tools.find('.path').on('click', function() {
+      toolSelection.selectPath();
     });
   }
 
