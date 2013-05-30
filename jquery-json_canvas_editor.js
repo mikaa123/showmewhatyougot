@@ -278,6 +278,9 @@
           text.edit();
           break;
         case CST.TOOLS.PATH:
+          $.each(nodes, function() {
+            this.setDraggable(false);
+          });
           newSpline = new Kinetic.Spline({
             points: [{
               x: evt.offsetX,
@@ -289,7 +292,14 @@
             tension: 1,
             draggable: true
           });
+          newSpline.on('click', function() {
+            freeEditionViews();
+            this.moveToTop();
+            currentSelectedNode = this;
+            editView.setModel(this);
+          });
           splineDrawing = true;
+          nodes.push(newSpline);
           layer.add(newSpline);
           layer.draw();
           break;
@@ -305,6 +315,9 @@
     .on('mouseup', function(evt) {
       splineDrawing = false;
       toolSelection.selectHand();
+      $.each(nodes, function() {
+        this.setDraggable(true);
+      });
     });
 
     stage.getContainer().addEventListener('dragover', function(evt) {
