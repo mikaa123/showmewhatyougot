@@ -225,7 +225,7 @@
       text: 'Placholder',
       fontSize: 30,
       fontFamily: 'Helvetica',
-      fill: 'black',
+      fill: 'white',
       draggable: true
     });
 
@@ -286,7 +286,7 @@
               x: evt.offsetX,
               y: evt.offsetY
             }],
-            stroke: 'black',
+            stroke: 'white',
             strokeWidth: 10,
             lineCap: 'round',
             tension: 1,
